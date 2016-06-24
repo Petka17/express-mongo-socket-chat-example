@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "ejs-locals": "^1.0.2",
+    "mongodb": "^2.1.18",
     "nconf": "^0.8.4",
     "winston": "^2.2.0"
   }
