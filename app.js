@@ -10,6 +10,9 @@ var bodyParser     = require('body-parser');
 var cookieParser   = require('cookie-parser');
 var expressSession = require('express-session');
 
+// Custome middleware
+var loadUser = require('middleware/loadUser');
+
 // Session store
 var MongoStore = require('connect-mongo')(expressSession);
 
@@ -33,6 +36,7 @@ app.set('view engine', 'ejs');
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 // Session (after cookieParser)
@@ -45,23 +49,11 @@ app.use(expressSession({
     store: new MongoStore({ mongooseConnection: mongoose.connection })
 }));
 
-// Test Sessions
-app.use(function(req, res, next) {
-    req.session.numberOfVisits = req.session.numberOfVisits + 1 || 1;
-    res.send('Visits ' + req.session.numberOfVisits);
-});
+// Set user
+app.use(loadUser);
 
-// Root path render
-app.get('/', function(req, res, next) {
-    res.render('index', {});
-});
-
-// Error path
-app.get('/error', function(req, res, next) {
-    var err = new Error('Server Error');
-    err.status = 500;
-    next(err);
-});
+// Set routes
+app.use(require('./routes'));
 
 // Serve static asserts
 app.use(express.static(path.join(__dirname, 'public')));
