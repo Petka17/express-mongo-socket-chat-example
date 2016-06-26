@@ -4,14 +4,19 @@ var http    = require('http');
 var path    = require('path');
 
 // Middleware function generators
-var favicon      = require('serve-favicon');
-var logger       = require('morgan');
-var bodyParser   = require('body-parser');
-var cookieParser = require('cookie-parser');
+var favicon        = require('serve-favicon');
+var logger         = require('morgan');
+var bodyParser     = require('body-parser');
+var cookieParser   = require('cookie-parser');
+var expressSession = require('express-session');
+
+// Session store
+var MongoStore = require('connect-mongo')(expressSession);
 
 // Custom modules
-var config = require('config');
-var log    = require('lib/log')(module);
+var config   = require('config');
+var log      = require('lib/log')(module);
+var mongoose = require('lib/mongoose');
 
 // Init express app
 var app = express();
@@ -30,17 +35,33 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(cookieParser());
 
+// Session (after cookieParser)
+app.use(expressSession({
+    resave: true,
+    saveUninitialized: true,
+    secret: config.get('session:secret'),
+    key: config.get('session:key'),
+    cookie: config.get('session:cookie'),
+    store: new MongoStore({ mongooseConnection: mongoose.connection })
+}));
+
+// Test Sessions
+app.use(function(req, res, next) {
+    req.session.numberOfVisits = req.session.numberOfVisits + 1 || 1;
+    res.send('Visits ' + req.session.numberOfVisits);
+});
+
 // Root path render
 app.get('/', function(req, res, next) {
     res.render('index', {});
-})
+});
 
 // Error path
 app.get('/error', function(req, res, next) {
     var err = new Error('Server Error');
     err.status = 500;
     next(err);
-})
+});
 
 // Serve static asserts
 app.use(express.static(path.join(__dirname, 'public')));
