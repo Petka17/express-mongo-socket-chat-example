@@ -15,8 +15,10 @@
     "serve-favicon": "~2.3.0"
   },
   "devDependencies": {
+    "async": "^2.0.0-rc.6",
     "ejs-locals": "^1.0.2",
     "mongodb": "^2.1.18",
+    "mongoose": "^4.5.1",
     "nconf": "^0.8.4",
     "winston": "^2.2.0"
   }

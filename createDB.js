@@ -1,23 +1,67 @@
-var MongoClient = require('mongodb').MongoClient;
+'use strict';
 
-MongoClient.connect("mongodb://localhost:27017/chat", function(err, db) {
+var async = require('async');
+
+var mongoose = require('lib/mongoose');
+mongoose.set('debug', true);
+
+async.series([
+    openConnection,
+    dropDatabase,
+    initModels,
+    createUsers
+], function(err) {
+    closeConnection(function(err) { if (err) throw err; });
+
     if (err) throw err;
-
-    var collection = db.collection('test_insert');
-
-    collection.removeMany({}, function(err, affected) {
-        if (err) throw err;
-
-        collection.insertOne({a: 2}, function(err, docs) {
-            if (err) throw err;
-
-            collection.find().toArray(function(err, results) {
-                if (err) throw err;
-
-                console.dir(results);
-
-                db.close();
-            });
-        });
-    });
 });
+
+function openConnection(callback) {
+    console.log("openConnection...");
+
+    mongoose.connection.on('open', callback);
+}
+
+function dropDatabase(callback) {
+    console.log("dropDatabase...");
+
+    mongoose.connection.db.dropDatabase(callback);
+}
+
+function initModels(callback) {
+    console.log("initModels...");
+
+    require('models/user');
+
+    async.each(
+        Object.keys(mongoose.models),
+        function(modelName, callback) {
+            console.log("ensureIndexes for model " + modelName);
+            mongoose.models[modelName].ensureIndexes(callback);
+        },
+        callback
+    );
+}
+
+function createUsers(callback) {
+    console.log("createUsers...");
+
+    async.each([
+            {username: "test1", password: "secret"},
+            {username: "test2", password: "secret"},
+            {username: "test3", password: "secret"}
+        ],
+        function (userData, callback) {
+            console.log("createUser with username " + userData.username);
+
+            var user = new mongoose.models.User(userData);
+            user.save(function(err) { callback(err, user); })
+        },
+        callback
+    )
+}
+
+function closeConnection(callback) {
+    console.log("closeConnection...");
+    mongoose.disconnect(callback);
+}
