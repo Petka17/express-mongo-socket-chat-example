@@ -76,7 +76,21 @@ app.use(function (err, req, res, next) {
     });
 });
 
-// Start server
-http.createServer(app).listen(app.get('port'), function () {
+// Create server
+var server = http.createServer(app);
+
+// Listen http requests
+server.listen(app.get('port'), function () {
     log.info('Express listening on port %s in %s mode', app.get('port'), app.get('env'));
+});
+
+//  Setup Socket.io
+var io = require('socket.io')(server);
+io.set('origins', 'localhost:*');
+
+io.sockets.on('connection', function(socket) {
+    socket.on('message', function(text, callback) {
+        socket.broadcast.emit('message', text);
+        callback();
+    });
 });
